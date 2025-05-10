@@ -33,7 +33,7 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 
 # Expose the port the app runs on
-EXPOSE 8089
+EXPOSE 8080
 
 # Command to run the executable
 CMD ["./main"]

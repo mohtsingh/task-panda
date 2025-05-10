@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -24,7 +25,10 @@ var db *sql.DB
 
 func initDB() {
 	var err error
-	connStr := "postgres://gls:gls@localhost:5433/test?sslmode=disable" // Replace with your credentials
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		log.Fatal("DATABASE_URL environment variable not set")
+	}
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
@@ -41,8 +45,7 @@ func createTask(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
 
-	// Insert into database
-	query := `INSERT INTO tasks (category, title, description, budget, location, date) 
+	query := `INSERT INTO tasks (category, title, description, budget, location, date)
 	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	err := db.QueryRow(query, newTask.Category, newTask.Title, newTask.Description, newTask.Budget, newTask.Location, newTask.Date).Scan(&newTask.ID)
 	if err != nil {
@@ -52,10 +55,9 @@ func createTask(c echo.Context) error {
 	return c.JSON(http.StatusCreated, newTask)
 }
 
-// GET task by ID
 func getTaskByID(c echo.Context) error {
 	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam) // Convert the id from string to int
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid ID format"})
 	}
@@ -74,13 +76,12 @@ func getTaskByID(c echo.Context) error {
 }
 
 func main() {
-	// Initialize the database connection
 	initDB()
 	defer db.Close()
 
 	e := echo.New()
 	e.POST("/tasks", createTask)
-	e.GET("/tasks/:id", getTaskByID) // GET by ID
+	e.GET("/tasks/:id", getTaskByID)
 
-	e.Logger.Fatal(e.Start(":8089"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
