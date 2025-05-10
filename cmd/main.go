@@ -103,5 +103,5 @@ func main() {
 	e.GET("/tasks/:id", getTaskByID)
 	e.GET("/tasks", getAllTasks)
 
-	e.Logger.Fatal(e.Start(":8089"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
