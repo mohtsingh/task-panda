@@ -1,0 +1,6 @@
+# Exclude Go modules and build artifacts
+.git
+Dockerfile
+.dockerignore
+bin/
+vendor/
