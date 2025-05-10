@@ -7,7 +7,6 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 )
 
@@ -25,10 +24,7 @@ var db *sql.DB
 
 func initDB() {
 	var err error
-	connStr := os.Getenv("DATABASE_URL")
-	if connStr == "" {
-		log.Fatal("DATABASE_URL environment variable not set")
-	}
+	connStr := "postgres://gls:gls@localhost:5433/test?sslmode=disable" // Replace with your credentials
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
@@ -45,7 +41,7 @@ func createTask(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
 
-	query := `INSERT INTO tasks (category, title, description, budget, location, date)
+	query := `INSERT INTO tasks (category, title, description, budget, location, date) 
 	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	err := db.QueryRow(query, newTask.Category, newTask.Title, newTask.Description, newTask.Budget, newTask.Location, newTask.Date).Scan(&newTask.ID)
 	if err != nil {
@@ -75,6 +71,26 @@ func getTaskByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, item)
 }
 
+func getAllTasks(c echo.Context) error {
+	rows, err := db.Query("SELECT id, category, title, description, budget, location, date FROM tasks")
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to fetch tasks"})
+	}
+	defer rows.Close()
+
+	tasks := []Task{}
+	for rows.Next() {
+		var task Task
+		err := rows.Scan(&task.ID, &task.Category, &task.Title, &task.Description, &task.Budget, &task.Location, &task.Date)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Error scanning task"})
+		}
+		tasks = append(tasks, task)
+	}
+
+	return c.JSON(http.StatusOK, tasks)
+}
+
 func main() {
 	initDB()
 	defer db.Close()
@@ -82,6 +98,7 @@ func main() {
 	e := echo.New()
 	e.POST("/tasks", createTask)
 	e.GET("/tasks/:id", getTaskByID)
+	e.GET("/tasks", getAllTasks) // GET all tasks
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(":8089"))
 }
