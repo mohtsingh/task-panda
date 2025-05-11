@@ -103,7 +103,7 @@ func main() {
 
 	// Enable CORS with more specific settings
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:3000", "https://your-frontend-domain.com"},        // Specify allowed origins
+		AllowOrigins:     []string{"*"},                                                                // Specify allowed origins
 		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete}, // Allowed methods
 		AllowHeaders:     []string{echo.HeaderContentType, echo.HeaderAuthorization},                   // Allowed headers
 		AllowCredentials: true,                                                                         // Allow credentials (cookies, etc.)
