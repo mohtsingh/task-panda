@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
@@ -99,6 +100,8 @@ func main() {
 	defer db.Close()
 
 	e := echo.New()
+	e.Use(middleware.CORS())
+
 	e.POST("/tasks", createTask)
 	e.GET("/tasks/:id", getTaskByID)
 	e.GET("/tasks", getAllTasks)
