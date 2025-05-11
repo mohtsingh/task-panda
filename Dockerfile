@@ -13,9 +13,8 @@ RUN go mod tidy
 # Copy the source code from the local 'cmd' directory into the container's '/app' directory
 COPY cmd/ ./cmd/
 
-# Run go get to fetch dependencies
-RUN go get github.com/labstack/echo/v4
-RUN go get github.com/lib/pq
+# Copy the rest of the application code
+COPY . .
 
 # Build the Go app
 RUN go build -o main ./cmd/
