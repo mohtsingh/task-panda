@@ -7,8 +7,8 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: tasks
     volumes:
-      - db-data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - new-db-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
   app:
@@ -22,4 +22,4 @@ services:
     ports:
       - "8080:8080"
 volumes:
-  db-data: {}
+  new-db-data: {}
