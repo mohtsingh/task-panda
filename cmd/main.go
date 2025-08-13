@@ -164,7 +164,7 @@ func createProfile(c echo.Context) error {
 
 // Get profile by email
 func getProfileByEmail(c echo.Context) error {
-	email := c.QueryParam("email")
+	email := c.Param("email")
 	if email == "" {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Email is required"})
 	}
