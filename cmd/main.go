@@ -54,18 +54,58 @@ func initDB() {
 }
 
 func createTask(c echo.Context) error {
-	var newTask Task
-	if err := c.Bind(&newTask); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+	// Parse form data instead of JSON
+	category := c.FormValue("category")
+	title := c.FormValue("title")
+	description := c.FormValue("description")
+	budgetStr := c.FormValue("budget")
+	location := c.FormValue("location")
+	date := c.FormValue("date")
+
+	// Validate required fields
+	if category == "" || title == "" || description == "" || budgetStr == "" || location == "" || date == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "All fields are required"})
 	}
 
+	// Convert budget string to float64
+	budget, err := strconv.ParseFloat(budgetStr, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid budget format"})
+	}
+
+	// Create task object
+	newTask := Task{
+		Category:    category,
+		Title:       title,
+		Description: description,
+		Budget:      budget,
+		Location:    location,
+		Date:        date,
+	}
+
+	// Handle optional image upload
+	file, header, err := c.Request().FormFile("image")
+	var imageData []byte
+	if err == nil {
+		defer file.Close()
+		imageData, err = ioutil.ReadAll(file)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to read image"})
+		}
+		fmt.Printf("Uploaded image: %s, size: %d bytes\n", header.Filename, len(imageData))
+		// You can save imageData to database or file system here
+	}
+
+	// Insert task into database
 	query := `INSERT INTO tasks (category, title, description, budget, location, date) 
 	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
-	err := db.QueryRow(query, newTask.Category, newTask.Title, newTask.Description, newTask.Budget, newTask.Location, newTask.Date).Scan(&newTask.ID)
+	err = db.QueryRow(query, newTask.Category, newTask.Title, newTask.Description, newTask.Budget, newTask.Location, newTask.Date).Scan(&newTask.ID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to insert item"})
+		fmt.Printf("Database error: %v\n", err)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to insert task"})
 	}
 
+	fmt.Printf("Task created successfully: %+v\n", newTask)
 	return c.JSON(http.StatusCreated, newTask)
 }
 
