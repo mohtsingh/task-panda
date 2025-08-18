@@ -11,3 +11,4 @@ CREATE TABLE profiles (
 ALTER TABLE profiles ADD CONSTRAINT unique_email UNIQUE (email);
 
 ALTER TABLE profiles ADD COLUMN photo BYTEA;
+
