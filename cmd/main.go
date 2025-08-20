@@ -20,8 +20,8 @@ func main() {
 		AllowHeaders:     []string{echo.HeaderContentType, echo.HeaderAuthorization},
 		AllowCredentials: true,
 	}))
-
+	//FIXME : use the api key when integrated in frontend
+	//e.Use(routes.APIKeyMiddleware)
 	routes.RegisterRoutes(e)
-
 	log.Fatal(e.Start(":8080"))
 }

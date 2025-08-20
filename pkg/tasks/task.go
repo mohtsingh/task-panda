@@ -13,6 +13,7 @@ import (
 
 func CreateTask(c echo.Context) error {
 	// Parse form data instead of JSON
+
 	category := c.FormValue("category")
 	title := c.FormValue("title")
 	description := c.FormValue("description")
@@ -56,6 +57,7 @@ func CreateTask(c echo.Context) error {
 	if err == nil {
 		defer file.Close()
 		imageData, err = ioutil.ReadAll(file)
+
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to read image"})
 		}
@@ -121,7 +123,6 @@ func GetAllTasks(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, tasks)
 }
-
 // Update task status (for completing tasks, etc.)
 func UpdateTaskStatus(c echo.Context) error {
 	taskIDStr := c.Param("task_id")
