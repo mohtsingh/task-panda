@@ -3,7 +3,7 @@ package tasks
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"task-panda/pkg/db"
@@ -56,7 +56,7 @@ func CreateTask(c echo.Context) error {
 	var imageData []byte
 	if err == nil {
 		defer file.Close()
-		imageData, err = ioutil.ReadAll(file)
+		imageData, err = io.ReadAll(file)
 
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to read image"})
@@ -102,9 +102,22 @@ func GetTaskByID(c echo.Context) error {
 }
 
 func GetAllTasks(c echo.Context) error {
-	rows, err := db.DB.Query(`SELECT id, category, title, description, budget, location, date, 
-	                      created_by, status, accepted_provider_id, created_at, updated_at FROM tasks 
-	                      ORDER BY created_at DESC`)
+	createdBy := c.QueryParam("created_by")
+
+	var rows *sql.Rows
+	var err error
+
+	if createdBy != "" {
+		rows, err = db.DB.Query(`SELECT id, category, title, description, budget, location, date, 
+			created_by, status, accepted_provider_id, created_at, updated_at 
+			FROM tasks WHERE created_by = $1 ORDER BY created_at DESC`, createdBy)
+	} else {
+		// Otherwise fetch all
+		rows, err = db.DB.Query(`SELECT id, category, title, description, budget, location, date, 
+			created_by, status, accepted_provider_id, created_at, updated_at 
+			FROM tasks ORDER BY created_at DESC`)
+	}
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to fetch tasks"})
 	}
@@ -123,6 +136,7 @@ func GetAllTasks(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, tasks)
 }
+
 // Update task status (for completing tasks, etc.)
 func UpdateTaskStatus(c echo.Context) error {
 	taskIDStr := c.Param("task_id")
