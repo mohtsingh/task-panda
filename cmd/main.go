@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
+	"task-panda/pkg"
 	"task-panda/pkg/db"
-	"task-panda/pkg/routes"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -23,6 +23,5 @@ func main() {
 	//FIXME : use the api key when integrated in frontend
 	//e.Use(routes.APIKeyMiddleware)
 	routes.RegisterRoutes(e)
-
 	log.Fatal(e.Start(":8080"))
 }
