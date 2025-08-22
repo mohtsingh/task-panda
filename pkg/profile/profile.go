@@ -28,16 +28,18 @@ func CreateProfile(c echo.Context) error {
 		return c.JSON(http.StatusConflict, echo.Map{"error": "Email already exists"})
 	}
 
+	// Handle optional photo upload
+	var photoBytes []byte
 	file, _, err := c.Request().FormFile("photo")
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Photo is required"})
+	if err == nil {
+		// Photo was provided
+		defer file.Close()
+		photoBytes, err = io.ReadAll(file)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to read photo"})
+		}
 	}
-	defer file.Close()
-
-	photoBytes, err := io.ReadAll(file)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to read photo"})
-	}
+	// If err != nil, photo wasn't provided, so photoBytes remains nil
 
 	query := `INSERT INTO profiles (full_name, email, address, phone_number, bio, role, photo)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
