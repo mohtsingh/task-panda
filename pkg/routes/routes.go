@@ -15,5 +15,6 @@ func RegisterRoutes(e *echo.Echo) {
 
 	// Profile routes
 	e.POST("/profile", profile.CreateProfile)
+	e.PUT("/profile/:id", profile.UpdateProfile)
 	e.GET("/profile/:email", profile.GetProfileByEmail)
 }

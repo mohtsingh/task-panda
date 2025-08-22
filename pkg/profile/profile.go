@@ -49,14 +49,97 @@ func CreateProfile(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to create profile"})
 	}
 
+	// Create response using the Profile struct
+	profile := Profile{
+		ID:          id,
+		FullName:    fullName,
+		Email:       email,
+		Address:     address,
+		PhoneNumber: phone,
+		Bio:         bio,
+		Role:        role,
+		// Photo is omitted from JSON response due to json:"-" tag
+	}
+
 	return c.JSON(http.StatusCreated, echo.Map{
 		"message": "Profile created",
-		"profile": echo.Map{
-			"id":       id,
-			"fullName": fullName,
-			"email":    email,
-			"role":     role,
-		},
+		"profile": profile,
+	})
+}
+
+func UpdateProfile(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "ID is required"})
+	}
+
+	// Check if profile exists
+	var existingProfile Profile
+	checkQuery := `SELECT id, full_name, email, address, phone_number, bio, role, photo FROM profiles WHERE id = $1`
+	err := db.DB.QueryRow(checkQuery, id).Scan(&existingProfile.ID, &existingProfile.FullName,
+		&existingProfile.Email, &existingProfile.Address, &existingProfile.PhoneNumber,
+		&existingProfile.Bio, &existingProfile.Role, &existingProfile.Photo)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, echo.Map{"error": "Profile not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to fetch profile"})
+	}
+
+	// Get form values (use existing values if not provided)
+	fullName := c.FormValue("full_name")
+	if fullName == "" {
+		fullName = existingProfile.FullName
+	}
+
+	address := c.FormValue("address")
+	if address == "" {
+		address = existingProfile.Address
+	}
+
+	phone := c.FormValue("phone_number")
+	if phone == "" {
+		phone = existingProfile.PhoneNumber
+	}
+
+	bio := c.FormValue("bio")
+	if bio == "" {
+		bio = existingProfile.Bio
+	}
+
+	// Handle optional photo upload
+	photoBytes := existingProfile.Photo // Keep existing photo by default
+	file, _, err := c.Request().FormFile("photo")
+	if err == nil {
+		// New photo was provided
+		defer file.Close()
+		photoBytes, err = io.ReadAll(file)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to read photo"})
+		}
+	}
+
+	// Update the profile
+	updateQuery := `UPDATE profiles SET full_name = $1, address = $2, phone_number = $3, bio = $4, photo = $5 WHERE id = $6`
+	_, err = db.DB.Exec(updateQuery, fullName, address, phone, bio, photoBytes, id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to update profile"})
+	}
+
+	// Return updated profile
+	updatedProfile := Profile{
+		ID:          existingProfile.ID,
+		FullName:    fullName,
+		Email:       existingProfile.Email,
+		Address:     address,
+		PhoneNumber: phone,
+		Bio:         bio,
+		Role:        existingProfile.Role,
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "Profile updated",
+		"profile": updatedProfile,
 	})
 }
 
@@ -66,16 +149,7 @@ func GetProfileByEmail(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Email is required"})
 	}
 
-	var profile struct {
-		ID          int
-		FullName    string
-		Email       string
-		Address     string
-		PhoneNumber string
-		Bio         string
-		Role        string
-		Photo       []byte
-	}
+	var profile Profile
 
 	query := `SELECT id, full_name, email, address, phone_number, bio, role, photo 
 	          FROM profiles WHERE email = $1`
