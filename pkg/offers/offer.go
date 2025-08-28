@@ -175,22 +175,6 @@ func AcceptOffer(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to reject other offers"})
 	}
 
-	// Deactivate all other chats for this task
-	_, err = tx.Exec(`UPDATE chats SET is_active = false 
-	                  WHERE task_id = $1 AND offer_id != $2`, offer.TaskID, offerID)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to deactivate chats"})
-	}
-
-	// Add system message to the accepted chat
-	var acceptedChatID int
-	err = tx.QueryRow(`SELECT id FROM chats WHERE offer_id = $1`, offerID).Scan(&acceptedChatID)
-	if err == nil {
-		_, err = tx.Exec(`INSERT INTO messages (chat_id, sender_id, message_text, message_type) 
-		                  VALUES ($1, $2, $3, $4)`, acceptedChatID, customerID,
-			"Congratulations! Your offer has been accepted. Let's get started!", "SYSTEM")
-	}
-
 	// Commit transaction
 	if err = tx.Commit(); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to commit transaction"})
