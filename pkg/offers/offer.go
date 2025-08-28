@@ -2,8 +2,6 @@ package offers
 
 import (
 	"database/sql"
-	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -71,7 +69,6 @@ func CreateOffer(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to create offer"})
 	}
 
-	
 	offer := Offer{
 		ID:           offerID,
 		TaskID:       taskID,
