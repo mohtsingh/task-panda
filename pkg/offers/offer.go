@@ -71,23 +71,7 @@ func CreateOffer(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to create offer"})
 	}
 
-	// Create a chat for this offer
-	var chatID int
-	chatQuery := `INSERT INTO chats (task_id, customer_id, provider_id, offer_id) 
-	              VALUES ($1, $2, $3, $4) RETURNING id`
-	err = db.DB.QueryRow(chatQuery, taskID, customerID, providerID, offerID).Scan(&chatID)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to create chat"})
-	}
-
-	// Send initial message about the offer
-	messageText := fmt.Sprintf("I'm interested in your task and would like to offer my services for $%.2f. %s", offeredPrice, message)
-	_, err = db.DB.Exec(`INSERT INTO messages (chat_id, sender_id, message_text, message_type) 
-	                  VALUES ($1, $2, $3, $4)`, chatID, providerID, messageText, "OFFER_UPDATE")
-	if err != nil {
-		log.Printf("Failed to create initial message: %v", err)
-	}
-
+	
 	offer := Offer{
 		ID:           offerID,
 		TaskID:       taskID,
