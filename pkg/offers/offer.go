@@ -83,6 +83,76 @@ func CreateOffer(c echo.Context) error {
 	return c.JSON(http.StatusCreated, offer)
 }
 
+// Update an existing offer
+func UpdateOffer(c echo.Context) error {
+	offerIDStr := c.Param("offer_id")
+	offerID, err := strconv.Atoi(offerIDStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid offer_id format"})
+	}
+
+	// Get the existing offer to verify ownership and status
+	var existingOffer Offer
+	query := `SELECT id, task_id, provider_id, offered_price, message, status, created_at, updated_at
+	          FROM offers WHERE id = $1`
+	err = db.DB.QueryRow(query, offerID).Scan(&existingOffer.ID, &existingOffer.TaskID,
+		&existingOffer.ProviderID, &existingOffer.OfferedPrice, &existingOffer.Message,
+		&existingOffer.Status, &existingOffer.CreatedAt, &existingOffer.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, echo.Map{"error": "Offer not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to fetch offer"})
+	}
+
+	// Only allow updates if offer is still pending
+	if existingOffer.Status != "PENDING" {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Cannot update offer that is not in pending status"})
+	}
+
+	// Get updated fields from request
+	offeredPriceStr := c.FormValue("offered_price")
+	message := c.FormValue("message")
+
+	// Use existing values if not provided
+	updatedPrice := existingOffer.OfferedPrice
+	updatedMessage := existingOffer.Message
+
+	if offeredPriceStr != "" {
+		updatedPrice, err = strconv.ParseFloat(offeredPriceStr, 64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid offered_price format"})
+		}
+	}
+
+	if message != "" {
+		updatedMessage = message
+	}
+
+	// Update the offer
+	var updatedAt time.Time
+	updateQuery := `UPDATE offers SET offered_price = $1, message = $2, updated_at = CURRENT_TIMESTAMP 
+	                WHERE id = $3 RETURNING updated_at`
+	err = db.DB.QueryRow(updateQuery, updatedPrice, updatedMessage, offerID).Scan(&updatedAt)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to update offer"})
+	}
+
+	// Return updated offer
+	updatedOffer := Offer{
+		ID:           existingOffer.ID,
+		TaskID:       existingOffer.TaskID,
+		ProviderID:   existingOffer.ProviderID,
+		OfferedPrice: updatedPrice,
+		Message:      updatedMessage,
+		Status:       existingOffer.Status,
+		CreatedAt:    existingOffer.CreatedAt,
+		UpdatedAt:    updatedAt.Format(time.RFC3339),
+	}
+
+	return c.JSON(http.StatusOK, updatedOffer)
+}
+
 // Get all offers for a task
 func GetTaskOffers(c echo.Context) error {
 	taskIDStr := c.Param("task_id")
