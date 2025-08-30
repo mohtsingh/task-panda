@@ -23,4 +23,5 @@ func RegisterRoutes(e *echo.Echo) {
 	e.POST("/offers", offers.CreateOffer)
 	e.GET("/tasks/:task_id/offers", offers.GetTaskOffers)
 	e.POST("/offers/:offer_id/accept", offers.AcceptOffer)
+	e.PUT("/offers/:offer_id", offers.UpdateOffer)
 }
