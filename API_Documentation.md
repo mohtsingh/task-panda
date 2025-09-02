@@ -1,4 +1,3 @@
-
 # Task Panda API Documentation
 
 _Last Updated: 2025-08-19_
@@ -120,6 +119,26 @@ message=I can complete it by tomorrow.
 **GET** `/tasks/:task_id/offers`  
 
 **Example:** `/tasks/1/offers`
+
+---
+
+### Update Offer  
+**PUT** `/offers/:offer_id`  
+**Content-Type:** `appliction/json`  
+**JSON Body:**
+```
+{
+  "offered_price": 175.50,
+  "message": "Updated offer with better timeline"
+}
+```
+**Parameters:**
+- `offered_price`: float (optional)  
+- `message`: string (optional)  
+
+**Example:** `/offers/1`  
+
+**Note:** Only pending offers can be updated. You can update either price, message, or both fields.
 
 ---
 

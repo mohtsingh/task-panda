@@ -83,6 +83,80 @@ func CreateOffer(c echo.Context) error {
 	return c.JSON(http.StatusCreated, offer)
 }
 
+// Update an existing offer
+func UpdateOffer(c echo.Context) error {
+	offerIDStr := c.Param("offer_id")
+	offerID, err := strconv.Atoi(offerIDStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid offer_id format"})
+	}
+
+	// Parse JSON request body
+	var req UpdateOfferRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid JSON format"})
+	}
+
+	// Validate that at least one field is provided
+	if req.OfferedPrice == nil && req.Message == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "At least one field (offered_price or message) must be provided"})
+	}
+
+	// Get the existing offer to verify ownership and status
+	var existingOffer Offer
+	query := `SELECT id, task_id, provider_id, offered_price, message, status, created_at, updated_at
+	          FROM offers WHERE id = $1`
+	err = db.DB.QueryRow(query, offerID).Scan(&existingOffer.ID, &existingOffer.TaskID, 
+		&existingOffer.ProviderID, &existingOffer.OfferedPrice, &existingOffer.Message,
+		&existingOffer.Status, &existingOffer.CreatedAt, &existingOffer.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, echo.Map{"error": "Offer not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to fetch offer"})
+	}
+
+	// Only allow updates if offer is still pending
+	if existingOffer.Status != "PENDING" {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Cannot update offer that is not in pending status"})
+	}
+
+	// Use existing values if not provided, otherwise use new values
+	updatedPrice := existingOffer.OfferedPrice
+	updatedMessage := existingOffer.Message
+
+	if req.OfferedPrice != nil {
+		updatedPrice = *req.OfferedPrice
+	}
+
+	if req.Message != nil {
+		updatedMessage = *req.Message
+	}
+
+	// Update the offer
+	var updatedAt time.Time
+	updateQuery := `UPDATE offers SET offered_price = $1, message = $2, updated_at = CURRENT_TIMESTAMP 
+	                WHERE id = $3 RETURNING updated_at`
+	err = db.DB.QueryRow(updateQuery, updatedPrice, updatedMessage, offerID).Scan(&updatedAt)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to update offer"})
+	}
+
+	// Return updated offer
+	updatedOffer := Offer{
+		ID:           existingOffer.ID,
+		TaskID:       existingOffer.TaskID,
+		ProviderID:   existingOffer.ProviderID,
+		OfferedPrice: updatedPrice,
+		Message:      updatedMessage,
+		Status:       existingOffer.Status,
+		CreatedAt:    existingOffer.CreatedAt,
+		UpdatedAt:    updatedAt.Format(time.RFC3339),
+	}
+
+	return c.JSON(http.StatusOK, updatedOffer)
+}
+
 // Get all offers for a task
 func GetTaskOffers(c echo.Context) error {
 	taskIDStr := c.Param("task_id")
