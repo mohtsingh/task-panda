@@ -124,15 +124,19 @@ message=I can complete it by tomorrow.
 
 ### Update Offer  
 **PUT** `/offers/:offer_id`  
-**Form Data:**  
+**Content-Type:** `appliction/json`  
+**JSON Body:**
+```
+{
+  "offered_price": 175.50,
+  "message": "Updated offer with better timeline"
+}
+```
+**Parameters:**
 - `offered_price`: float (optional)  
 - `message`: string (optional)  
 
 **Example:** `/offers/1`  
-```
-offered_price=175.50
-message=Updated offer with better timeline
-```
 
 **Note:** Only pending offers can be updated. You can update either price, message, or both fields.
 
