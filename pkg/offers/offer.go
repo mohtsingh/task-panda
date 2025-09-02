@@ -10,11 +10,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
-// UpdateOfferRequest represents the JSON request body for updating an offer
-type UpdateOfferRequest struct {
-	OfferedPrice *float64 `json:"offered_price,omitempty"`
-	Message      *string  `json:"message,omitempty"`
-}
 
 // Create an offer for a task
 func CreateOffer(c echo.Context) error {
