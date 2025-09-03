@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"task-panda/pkg/notifications"
 	"task-panda/pkg/offers"
 	"task-panda/pkg/profile"
 	"task-panda/pkg/tasks"
@@ -24,4 +25,6 @@ func RegisterRoutes(e *echo.Echo) {
 	e.GET("/tasks/:task_id/offers", offers.GetTaskOffers)
 	e.POST("/offers/:offer_id/accept", offers.AcceptOffer)
 	e.PUT("/offers/:offer_id", offers.UpdateOffer)
+	// Notification routes
+	e.POST("/notifications/fcm/token", notifications.RegisterDeviceToken)
 }

@@ -1,3 +1,4 @@
+
 # Task Panda API Documentation
 
 _Last Updated: 2025-08-19_
@@ -122,29 +123,40 @@ message=I can complete it by tomorrow.
 
 ---
 
-### Update Offer  
-**PUT** `/offers/:offer_id`  
-**Content-Type:** `appliction/json`  
-**JSON Body:**
-```
-{
-  "offered_price": 175.50,
-  "message": "Updated offer with better timeline"
-}
-```
-**Parameters:**
-- `offered_price`: float (optional)  
-- `message`: string (optional)  
-
-**Example:** `/offers/1`  
-
-**Note:** Only pending offers can be updated. You can update either price, message, or both fields.
-
----
-
 ### Accept an Offer  
 **POST** `/offers/:offer_id/accept`  
 
 **Example:** `/offers/5/accept`
+
+---
+
+## 🔔 Notification Routes
+
+### Register Device Token  
+**POST** `/notifications/fcm/token`  
+**Content-Type:** `application/json`  
+
+**JSON Body:**
+```json
+{
+  "profile_id": 1,
+  "token": "fcm-token-or-apns-token-here",
+  "platform": "android"
+}
+```
+
+**Parameters:**
+- `profile_id`: int (required) - User profile ID  
+- `token`: string (required) - FCM/APNs device token  
+- `platform`: string (optional) - "android", "ios", or "web"
+
+**Response:**
+```json
+{
+  "message": "Device token registered successfully",
+}
+```
+
+**Note:** Links device tokens to profiles for push notifications. Updates existing token if profile+platform already exists.
 
 ---
