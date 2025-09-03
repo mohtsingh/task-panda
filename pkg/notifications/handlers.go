@@ -2,12 +2,55 @@ package notifications
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"task-panda/pkg/db"
 	"time"
 
 	"github.com/labstack/echo/v4"
 )
+
+func NotifyServiceProviders(taskID int) {
+	query := `
+        SELECT p.id, dt.token 
+        FROM profiles p 
+        INNER JOIN device_tokens dt ON p.id = dt.profile_id 
+        WHERE p.role = 'SERVICE_PROVIDER' AND dt.is_active = true`
+
+	rows, err := db.DB.Query(query)
+	if err != nil {
+		log.Printf("Failed to fetch service providers and tokens: %v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	// Use map to count notifications per profile
+	profileNotifications := make(map[int]int)
+	totalNotifications := 0
+
+	for rows.Next() {
+		var profileID int
+		var token string
+
+		err = rows.Scan(&profileID, &token)
+		if err != nil {
+			log.Printf("Failed to scan row: %v\n", err)
+			continue
+		}
+
+		// Mock notification sending
+		log.Printf("Mocking Notification for task id %d, profile id %d\n", taskID, profileID)
+		profileNotifications[profileID]++
+		totalNotifications++
+	}
+
+	// Log summary
+	for profileID, count := range profileNotifications {
+		log.Printf("Sent %d notifications to profile %d\n", count, profileID)
+	}
+
+	log.Printf("Notification process completed. Total notifications sent: %d\n", totalNotifications)
+}
 
 func RegisterDeviceToken(c echo.Context) error {
 	var req RegisterTokenRequest
