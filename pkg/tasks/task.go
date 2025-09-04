@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"task-panda/pkg/db"
+	"task-panda/pkg/notifications"
 
 	"github.com/labstack/echo/v4"
 )
@@ -74,6 +75,9 @@ func CreateTask(c echo.Context) error {
 		fmt.Printf("Database error: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to insert task"})
 	}
+
+	// NEW: Send notifications to service providers
+	go notifications.NotifyServiceProviders(newTask.ID) // Using goroutine for async execution
 
 	fmt.Printf("Task created successfully: %+v\n", newTask)
 	return c.JSON(http.StatusCreated, newTask)
