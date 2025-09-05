@@ -23,6 +23,7 @@ type UpdateProfileRequest struct {
 	Address     string `json:"address"`
 	PhoneNumber string `json:"phone_number"`
 	Bio         string `json:"bio"`
+	Role        string `json:"role"`
 }
 
 func CreateProfile(c echo.Context) error {
@@ -111,9 +112,14 @@ func UpdateProfile(c echo.Context) error {
 		bio = existingProfile.Bio
 	}
 
+	role := req.Role
+	if role == "" {
+		role = existingProfile.Role
+	}
+
 	// Update the profile
-	updateQuery := `UPDATE profiles SET full_name = $1, address = $2, phone_number = $3, bio = $4 WHERE id = $5`
-	_, err = db.DB.Exec(updateQuery, fullName, address, phone, bio, id)
+	updateQuery := `UPDATE profiles SET full_name = $1, address = $2, phone_number = $3, bio = $4, role = $5 WHERE id = $6`
+	_, err = db.DB.Exec(updateQuery, fullName, address, phone, bio, role, id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to update profile"})
 	}
@@ -126,7 +132,7 @@ func UpdateProfile(c echo.Context) error {
 		Address:     address,
 		PhoneNumber: phone,
 		Bio:         bio,
-		Role:        existingProfile.Role,
+		Role:        role,
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
